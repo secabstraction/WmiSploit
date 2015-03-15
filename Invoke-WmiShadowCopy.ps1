@@ -111,7 +111,7 @@ function Insert-EncodedChunk (`$ByteBuffer) {
 }
 [UInt64]`$FileOffset = 0
 `$BufferSize = $BufferSize
-`$Path = `$env:TEMP + "$ShadowDirectory" + "$RemotePath".SubString(2, "$RemotePath".Length - 2)
+`$Path = `$env:TEMP + '\' + "$ShadowDirectory" + "$RemotePath".SubString(2, "$RemotePath".Length - 2)
 `$FileStream = New-Object System.IO.FileStream "`$Path",([System.IO.FileMode]::Open)
 `$BytesLeft = `$FileStream.Length
 if (`$FileStream.Length -gt `$BufferSize) {
