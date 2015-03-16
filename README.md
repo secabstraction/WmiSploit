@@ -1,6 +1,6 @@
 # WmiSploit
 
-WmiSploit is a small set of PowerShell scripts that leverage the WMI service, for post-exploitation use. While the WmiSploit scripts do not have built-in pass-the-hash functionality, [Invoke-TokenManipulation](https://github.com/mattifestation/PowerSploit/blob/master/Exfiltration/Invoke-TokenManipulation.ps1) from the [PowerSploit](https://github.com/mattifestation/PowerSploit) framework should provide a similar effect. WmiSploit scripts don't write any new files to disk, but their activities can be recovered by a defender who knows where to look.
+WmiSploit is a small set of PowerShell scripts that leverage the WMI service, for post-exploitation use. While the WmiSploit scripts do not have built-in pass-the-hash functionality, [Invoke-TokenManipulation](https://github.com/mattifestation/PowerSploit/blob/master/Exfiltration/Invoke-TokenManipulation.ps1) from the [PowerSploit](https://github.com/mattifestation/PowerSploit) framework should provide a similar effect. WmiSploit scripts don't write any new files to disk, but their activities can be recovered by a defender who knows where to look. These scripts have only been tested on a small set of Windows 8.1 and 7 machines, please let me know if they're not working for you or submit a pull request.
 
 ###New-WmiSession
 
@@ -12,7 +12,7 @@ Invoke-WmiShadowCopy creates a Volume Shadow Copy, links the Shadow Copy's Devic
 
 ###Invoke-WmiCommand
 
-The basis for these WmiSploit scripts leverages the fact that a PowerShell process can be started by the WMI service using the -EncodedCommand option. However, the -EncodedCommand option can only accept 8192 characters, limiting a script's length and complexity. Invoke-WmiCommand is a way around this limitation. Invoke-WmiCommand will upload a script to the WMI namespaces using the same mechanism that Invoke-WmiShadowCopy exfiltrates files. A waiting PowerShell session will pull the script out of the WMI namespaces and execute it using Invoke-Command -ScriptBlock {}
+The basis for these WmiSploit scripts leverages the fact that a PowerShell process can be started by the WMI service using the -EncodedCommand option. However, the -EncodedCommand option can only accept 8190 characters, limiting a script's length and complexity. Invoke-WmiCommand is a way around this limitation. Invoke-WmiCommand will upload a script to the WMI namespaces. A waiting PowerShell session will pull the script out of the WMI namespaces and execute it using Invoke-Command.
 
 ###Enter-WmiShell
 
