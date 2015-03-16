@@ -1,6 +1,6 @@
 # WmiSploit
 
-WmiSploit is a small set of PowerShell scripts that leverage the WMI service, for post-exploitation use. While the WmiSploit scripts do not have built-in pass-the-hash functionality, Invoke-TokenManipulation from the PowerSploit framework should provide a similar effect. WmiSploit scripts don't write any new files to disk, but their activities can be recovered by a defender who knows where to look.
+WmiSploit is a small set of PowerShell scripts that leverage the WMI service, for post-exploitation use. While the WmiSploit scripts do not have built-in pass-the-hash functionality, [Invoke-TokenManipulation](https://github.com/mattifestation/PowerSploit/blob/master/Exfiltration/Invoke-TokenManipulation.ps1) from the [PowerSploit](https://github.com/mattifestation/PowerSploit) framework should provide a similar effect. WmiSploit scripts don't write any new files to disk, but their activities can be recovered by a defender who knows where to look.
 
 ###New-WmiSession
 
