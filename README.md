@@ -10,5 +10,4 @@ Invoke-WmiShadowCopy creates a Volume Shadow Copy, links the Shadow Copy's Devic
 ###Enter-WmiShell
 
 ##TODO
----------
 ###Invoke-WmiRestorePoint
