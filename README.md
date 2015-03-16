@@ -16,10 +16,10 @@ The basis for these WmiSploit scripts leverages the fact that a PowerShell proce
 
 ###Enter-WmiShell
 
-Enter-WmiShell is the original WmiSploit script, largely based on Andrei Dumitrescu's python implementation; It provides a limited interactive shell for interacting with remote computers via WMI and retrieving CLI output.
+Enter-WmiShell is the original WmiSploit script, largely based on Andrei Dumitrescu's python implementation; it provides a limited interactive shell for interacting with remote computers via WMI and retrieving CLI output.
 
 ##TODO
-###Invoke-WmiRestorePoint
-###Remove-WmiRestorePoint
+####Invoke-WmiRestorePoint
+####Remove-WmiRestorePoint
 
 Since these WmiSploit scripts do leave some forensics behind, I'm going to test some scripts that will create a new restore point before using the scripts, restore the computer to that point after running the tools, and then delete the created restore point. Certainly this will leave some forensics as well, but I like to try things.
