@@ -1,7 +1,7 @@
-﻿function Invoke-WmiCommand {
+function Invoke-WmiCommand {
 Param (	
     [Parameter(Mandatory = $True, ValueFromPipelineByPropertyName = $True)]
-    [string[]]
+    [string]
     $ComputerName,
     
     [Parameter(ValueFromPipelineByPropertyName = $True)]
