@@ -6,7 +6,7 @@ Runs short powershell scripts on a remote host using WMI for transport.
  
 .DESCRIPTION
 
-Invoke-WmiCommand encodes a short powershell script runs it on a remote hose via WMI,
+Invoke-WmiCommand encodes a short powershell script runs it on a remote host via WMI,
 stores the ouput to the WMI namespaces, and then retrieves the output from the WMI namespaces.
  
 .PARAMETER ComputerName 
